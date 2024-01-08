@@ -1,112 +1,133 @@
 """
 Definitions:
-- Basis Kets are any bitstrings with a single '1' only
-- A Basis Ket with a '1' at index 'i' is referred to as 'e_i'
-- Non-Basis Kets are bitstrings with '1' occuring in at least two places
+- 'basis kets' are any bitstrings with a single '1' only
+- A basis ket with a '1' at index 'i' is referred to as 'e_i'
+- 'non-basis kets' are bitstrings with '1' occuring in at least two places
 
 Logic:
-- Given a Statevector Dictionary, separate all kets into 'basis kets' and 
-'non-basis kets'
-- For each 'non-basis ket', decompose it into its corresponding 'basis kets'
+- Given a Statevector Dictionary, separate all kets into basis kets and 
+non-basis kets
+- For each non-basis ket, decompose it into its corresponding basis kets
     and apply the Entanglement Criteria
 - Output the result:  whether or not the Statevector is Entangled
 
 Implementation:
-- Basis Kets are bitstrings representations of powers of 2.  Non-Basis Kets 
-are bitstrings representations of all other integers.  A 'decomposition' of a
-'Non-Basis Ket' into 'Basis Kets' means separating any integer that is not a
+- basis kets are bitstring representations of powers of 2.  non-basis kets 
+are bitstring representations of all other integers.  A 'decomposition' of a
+non-basis ket into basis kets means expressing any integer that is not a
 power of two into a sum of integers that are powers of two, e.g. the integer:
     13 = 8 + 4 + 1
 corresponds to:
     1101 = 1000 + 0100 + 0001
 in binary.
-- Given the number of qubits `n`, generate a list of powers of two from 2**0 
-    to 2**(n-1)
-- This list is a decimal index representation of Basis Kets
-- Alternatively, for bitstrings of length `n`, generate a list of bitstrings 
-    of zeros and a single '1' at index 'i', for each index
-- Given a Statevector, generate a list of Non-Basis Kets present in the 
-    Statevector by comparing its kets with the list of Basis Kets
-- For each Non-Basis Ket, generate a list of its corresponding Basis Kets
-    -- This is implemented two ways, one for decimal, one for binary
-- For each Non-Basis Ket, compare its amplitude with the product of its 
-    corresponding Basis Ket amplitudes
-- Record the equality as a boolean value (appended to the Non-Basis Ket
-    dictionary)
-- The Entanglement Criteria says that is if any boolean check is false, then
-    the state is Entangled.  If all boolean checks are true, the state is 
+- the input to the algorithm must be a Qiskit Statevector of length 2**n,
+    corresponding to a linear combination of all possible n-qubit states
+- the algorithm can be implemented two ways:
+    1. use Qiskit Statevector Dictionary.  this is my preferred method.
+        Statevector Dictionary uses bitstrings as keys to denote kets, and
+        stores the amplitudes as values.
+        - Given a number of qubits `n`, generate a list of bitstrings of
+            length `n` of all zeros and a single '1' at index 'i', for 
+            every index 0 <= i < n
+        - This list contains the binary representation of all basis kets in a 
+            Statevector Dictionary
+    
+    2. use Qiskit Statevector.  this stores amplitudes in a list where each ket
+        is referenced by its index. the decimal value of the index
+        corresponds to the binary representation of the ket.
+        - Given a number of qubits `n`, generate a list of powers of two 
+            from 2**0 to 2**(n-1)
+        - This list contains the decimal indices of basis kets in a Statevector
+
+With either representation:
+- Generate a list of non-basis kets in the Statevector by removing all 
+    basis kets from the entire list of kets
+- For each non-basis ket:
+    - generate a list of its corresponding basis kets
+    - compute the product of the basis ket amplitudes
+    - check whether its amplitude is equal to the product of its 
+      corresponding basis ket amplitudes and record the boolean result
+- The Entanglement Criteria says that if any boolean check is False, then
+    the state is Entangled.  If all boolean checks are True, the state is 
     Not Entangled.
 
 Notes:
 - I have only tested this with statevectors where the amplitude of the zero 
     ket |000...> is manually set to 1 by my user input, or set to 1 from the
     normalized_random_state() function in the create_statevector module.
-- Currently, this will return incorrect results for any statevector with a 
-    zero ket that has any other amplitude.  This needs to be corrected by 
-    'normalizing' any Statevector so that the zero ket has amplitude 1.
-- In instances where there is no zero ket, e.g., a statevector such as:
-    |psi> = |1000> + |0100> + |0001> + |1101>
+- Currently, the algorithm will return incorrect results for any statevector 
+    with a zero ket that has any other amplitude.  This needs to be corrected 
+    by 'normalizing' any Statevector so that the zero ket has amplitude 1.
+- In instances where the zero ket has amplitude 0, e.g., a statevector such as:
+        |psi> = |1000> + |0100> + |0001> + |1101>
     we need to perform a 'basis change' before applying the criteria, as
     outlined in Kauffman's paper.  This has not yet been implemented.
 """
 
-# Get list of Powers of Two in Binary or Decimal up to 2**(n-1)
-# input: 
-#   n = number of qubits
-#   base = 2 or 10 (optional)
+# Get list of powers of two in binary (default) or decimal
+# We refer to these values as 'basis-kets'
+# inputs: 
+#   - n = number of qubits
+#   - (optional) kets = list of all bitstrings of length n
+#   - (optional) base = 10
 # output: 
-#   list of powers of two up to 2**(number_qubits-1)
+#   - list of powers of two from 2**0 to 2**(n-1)
 def powers_of_two(n, kets=None, base=None):
     if base == 10:
+        # compute and store powers of two in base 10
         return [2**(n-1-i) for i in range(n)]
     elif kets:
+        # statevector keys() as input, choose only powers of two
         return [kets[2**(n-1-i)] for i in range(n)]
     else:
+        # construct binary strings directly
         return [format(1 << (n - 1 - i) | 0, '0'+str(n)+'b') for i in range(n)]
 
 
-# Get list of Non-Basis Kets in Binary or Decimal
-# input:
-#   n = number of qubits, 
-#   powers = list of powers of 2
-#   kets = list of all kets
-#   base = 2 or 10 (optional)
+# Get list of non powers of two in binary (default) or decimal
+# We refer to these values as 'non-basis kets'
+# inputs:
+#   - n = number of qubits, 
+#   - powers = list of powers of 2
+#   - (optional) kets = list of all bitstrings of length n
+#   - (optional) base = 10
 # output: 
-#   list of non-basis kets
+#   - list of non-powers of two less than 2**(n-1)
 def non_basis_kets(n, powers, kets=None, base=None):
-    # decimal
     if base == 10:
+        # generate a list of decimal integers without powers of two
         non_basis_kets = [i for i in range(1,2**n) if i not in powers]
-    # statevector keys() as input
     elif kets:
+        # statevector keys() as input, remove powers of two
         non_basis_kets = [ket for ket in kets[1:] if ket not in powers]
-    # construct binary kets
     else:
-        # can this be condensed to exclude 'powers'?
+        # construct binary strings directly
         non_basis_kets = [format(i, '0'+str(n)+'b') for i in range(1,2**n)]
         for p in powers:
             non_basis_kets.remove(p)        
     return non_basis_kets
 
 
-# Determine Basis Kets (binary)
-# input:    
-#   ket = non-basis ket
-#   powers = list of all basis kets
+# Determine basis kets corresponding to a non-basis ket
+# Use this to reference basis kets in a Qiskit Statevector Dictionary
+# Kets are all represented by binary strings
+# inputs:    
+#   - ket = a non-basis ket of length 'n'
+#   - powers = list of all basis kets of length 'n'
 # output:
-#   list of basis kets
+#   - list of basis kets whose binary sum equals the non-basis ket
 def get_basis_kets(ket, powers):
     basis_kets = [powers[index] for index, bit in enumerate(ket) if bit == "1"]
     return basis_kets
 
 
-# Determine Basis Kets (decimal)
-# creates a list of basis kets indices corresponding to non-basis ket
-# input:
-#   powers = list of powers of two
-#   k = non-basis ket index
+# Determine the integer powers of two that sum to a non-power of two
+# Use this to reference basis kets by their indices in a Qiskit Statevector
+# inputs:
+#   - powers = list of powers of two
+#   - k = non-basis ket index
 # output:
-#   list of basis ket indices
+#   - list of basis ket indices
 def get_basis_indices(k, powers):
     k_list = []
     for p in powers:
@@ -118,24 +139,24 @@ def get_basis_indices(k, powers):
     return k_list
 
 
-# Create a dictionary of non-basis kets as keys
-# Each value is a dictionary consisting of a list of corresponding basis kets
-# and will be appended later with target amplitude and boolean check
-# input:
-#   list of non-basis kets (binary) or non-basis ket indices (decimal)
-#   list of all basis kets (binary) or ket indices (decimal)
+# Create a dictionary of non-basis kets and their corresponding basis kets
+# inputs:
+#   - list = list of non-basis kets (binary) or non-basis ket indices
+#   - powers = list of all basis kets of length n (binary) or their ket indices
+#   - (optional) base = 10 (when using indices)
 # output:
-#   dictionary
+#   - dictionary containing:
+#       - keys: the non-basis kets provided above
+#       - values: dictionaries initialized with a list of their corresponding 
+#                 basis kets
 def non_basis_kets_dict(list, powers, base=None):
-    # list = list of non-basis kets or indices
-    # powers = list of basis kets or powers of 2
-    # base = 10 for indices output
     dict = {}
+
     if base == 10:
-        # decimal function
+        # use decimal function
         get_kets = get_basis_indices
     else:
-        # binary function
+        # use binary function
         get_kets = get_basis_kets
 
     for ket in list:
@@ -146,14 +167,14 @@ def non_basis_kets_dict(list, powers, base=None):
     return dict
 
 
-# Multiply Basis Ket Amplitudes
-# input: statevector = list (decimal) or dictionary (binary)
-#        list of basis kets (binary or decimal)
-# output: product of amplitudes, indexed by
-#         basis kets in Statevector dictionary (binary)
-#         or basis ket indices in Statevector (decimal)
+# Compute the product of basis ket amplitudes
+# This function works with either decimal or binary representations of kets
+# inputs:
+#   - statevector or statevector dictionary
+#   - list of basis kets as decimal indices or as binary strings
+# output: 
+#   - product of the amplitudes of the given basis kets
 def basis_amplitude_product(statevector, index_list):
-    """ Works with decimal and binary indices """
     product = 1    
     for index in index_list:
         product = product*statevector[index]
@@ -168,14 +189,21 @@ def is_equal(a, b):
     return a == b
 
 
-# single ket check function (using binary keys)
-# input: statevector, ket, list of basis kets (optional)
-#   if basis kets not provided, it will generate them
-# output: dictionary with amplitude and boolean check value
+# Check equality of a non-basis ket amplitude with the product of its 
+# corresponding basis ket amplitudes, and store the results in a dictionary.
+# This is a self-contained method to check the criteria on a specific ket 
+# without having to run the algorithm for all kets.
+# inputs:
+#   - a statevector dictionary
+#   - a non-basis ket (binary)
+#   - (optional) list of corresponding basis kets
+# output: 
+#   - dictionary with computed amplitude and boolean check value
 def check_single_ket(statevector, ket, basis_kets=None):
     dict = {}
-        
+
     if basis_kets == None:
+    #   if basis kets not provided, generate them
         basis_kets = generate_basis_kets(ket)
         dict['basis_kets'] = basis_kets
 
@@ -199,93 +227,104 @@ def check_single_ket(statevector, ket, basis_kets=None):
     return dict
 
 
-# Generate basis kets
+# Generate basis kets corresponding to a specific non-basis ket
 # Method 1 (binary)
-# Use with check_single_ket and Statevector Dictionary 
-#   when basis_kets not provided
-# input: (binary) non-basis ket string
-# output: (binary) keys for basis kets in Statevector Dictionary
+# Use with Qiskit Statevector Dictionary and function check_single_ket when a 
+#   list of basis kets is not provided
+# input:
+#   - bitstring representing a non-basis ket
+# output:
+#   - a list of bitstrings representing the corresponding basis kets
 def generate_basis_kets(ketstring):
     length = len(ketstring)
     basis_kets = [format(1 << (length - 1 - index) | 0, '0'+str(length)+'b')
                for index, bit in enumerate(ketstring) if bit == "1"]    
     return basis_kets
 
-# Generate basis indices
+# Generate basis indices corresponding to a specific non-basis ket index
 # Method 2 (decimal)
-# Use with check_single_ket and Statevector when basis_kets not provided
-# input: (binary) non-basis ket string
-# ouput: (decima) indices for basis kets in Statevector
-
+# Use with Qiskit Statevector and function check_single_ket when a list of 
+#   basis kets is not provided
+# input:
+#   - bitstring representing a non-basis ket
+# output:
+#   - decimal indices representing the corresponding basis kets
 def generate_basis_indices(ket):
     indices = [2**(len(ket) - 1 - index) for index, bit in enumerate(ket) 
     if bit == "1"]
     return indices
 
 
-# Print Product of Basis Kets Expression
-# input: list of basis kets for a non-basis ket
-# output: string of product of Psi[basis_ket]
-
+# Print Product of basis kets Expression
+# input:
+#   - list of basis kets for a non-basis ket
 def basis_product_string(list):
     product = "Psi['"+list[0]+"']"
     for index in list[1:]:
         product = product + "*Psi['"+index+"']"
     return product
 
+# Print Product of basis kets Amplitude
+# input:
+#   - kets = text string reference to product of a list of basis ket amplitudes
+#   - amplitude = the numerical value of the product of the amplitudes
+def print_basis_amplitudes(kets, amplitude):
+    print(kets + " = " + str(amplitude))
 
-# Print Non-basis ket amplitude
-# input: non-basis ket, amplitude
-
+# Print non-basis ket amplitude
+# inputs:
+#   - ket = text string reference to a non-basis ket amplitude
+#   - amplitude = numerical value of amplitude
 def print_ket_amplitude(ket, amplitude):
     print("Psi['"+ket+"'] = " + str(amplitude))
 
 
-# Print Product of Basis Kets Amplitude
-# input: product of basis ket string, amplitude
-
-def print_basis_amplitudes(kets, amplitude):
-    print(kets + " = " + str(amplitude))
-
-
 # Print True/False check statement
-# input: non-basis ket, product of basis ket string, boolean check value
-
+# inputs: 
+#   - non-basis ket
+#   - product of basis ket string
+#   - boolean check value
 def print_entanglement_equation(ket, basis_elements, bool):
     print("Psi['"+ket+"']" + " == " + basis_elements + " is " + str(bool))
 
 
-# Entanglement Function (binary kets)
-# input: Statevector Dictionary
-# output: dictionary 
-#   keys: all non-basis kets
-#   values: dictionaries of corresponding basis kets, target amplitude, 
-#           boolean check
-
+# Entanglement Function
+# At this time, this function only uses binary ket represenations
+# input:
+#   - statevector = Qiskit Statevector Dictionary
+# output:
+#   - dict = dictionary, where:
+#       - keys: all non-basis kets in the statevector
+#       - values: dictionaries containing:
+#           - corresponding basis kets
+#           - target amplitude (product of basis ket amplitudes) 
+#           - boolean equality check
+#   - print statement indicating whether or not the state is Entangled
 def entangled(statevector):
     # get number of qubits
     number_qubits = len(list(statevector.keys())[0])
 
-    # generate list of all basis kets:
+    # generate list of all basis kets
     powers = powers_of_two(number_qubits)
 
-    # generate list of all non-basis kets:        
+    # generate list of all non-basis kets
     non_basis_kets_list = non_basis_kets(number_qubits, powers)
 
-    # store all non-basis kets in dictionary:
+    # store all non-basis kets in dictionary
     dict = non_basis_kets_dict(non_basis_kets_list, powers)
 
     # initalize booleans
     booleans = set()
 
+    # apply entanglement criteria for each ket
     for ket in dict:
-        # get results fron check single ket:
+        # get results from check single ket
         ket_results = check_single_ket(
             statevector, 
             ket, 
             dict[ket]['basis_kets']
             )
-        # update dictionary with results:
+        # update dictionary with results
         # faster way to do this?  items()?
         dict[ket]['target_amplitude'] = ket_results['target_amplitude']
         dict[ket]['equality'] = ket_results['equality']
