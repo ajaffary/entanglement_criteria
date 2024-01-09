@@ -15,6 +15,9 @@ An object of class Entangled initializes with the following attributes:
     decompositions as values
         - this attribute name will likely change
 
+Attributres 1 - 5 are meant to be static and global to the class.  Attribute 6
+is meant to be local to a user statevector.
+        
 Example:
 >>> import entanglement_class as entang
 >>> x = entang.Entangled(4)
@@ -45,11 +48,152 @@ Example:
  '1101': {'basis_kets': ['1000', '0100', '0001']}, 
  '1110': {'basis_kets': ['1000', '0100', '0010']}, 
  '1111': {'basis_kets': ['1000', '0100', '0010', '0001']}}
->>>
+
+>>> x.entangled(x.statevector)
+|Psi> is not Entangled
+{'0011': {
+    'basis_kets': ['0010', '0001'], 
+    'target_amplitude': (1+0j), 
+    'equality': True
+    }, 
+ '0101': {
+    'basis_kets': ['0100', '0001'], 
+    'target_amplitude': (1+0j), 
+    'equality': True
+    }, 
+ '0110': {
+    'basis_kets': ['0100', '0010'], 
+    'target_amplitude': (1+0j), 
+    'equality': True
+    }, 
+ '0111': {
+    'basis_kets': ['0100', '0010', '0001'], 
+    'target_amplitude': (1+0j), 
+    'equality': True
+    }, 
+ '1001': {
+    'basis_kets': ['1000', '0001'], 
+    'target_amplitude': (1+0j), 
+    'equality': True
+    }, 
+ '1010': {
+    'basis_kets': ['1000', '0010'], 
+    'target_amplitude': (1+0j), 
+    'equality': True
+    }, 
+ '1011': {
+    'basis_kets': ['1000', '0010', '0001'], 
+    'target_amplitude': (1+0j), 
+    'equality': True
+    }, 
+ '1100': {
+    'basis_kets': ['1000', '0100'], 
+    'target_amplitude': (1+0j), 
+    'equality': True
+    }, 
+ '1101': {
+    'basis_kets': ['1000', '0100', '0001'], 
+    'target_amplitude': (1+0j), 
+    'equality': True
+    }, 
+ '1110': {
+    'basis_kets': ['1000', '0100', '0010'], 
+    'target_amplitude': (1+0j), 
+    'equality': True
+    },
+ '1111': {
+    'basis_kets': ['1000', '0100', '0010', '0001'], 
+    'target_amplitude': (1+0j), 
+    'equality': True
+    }
+}
+
+>>> my_statevector = x.get_amplitudes()
+Enter an amplitude for 0000: 4
+Enter an amplitude for 0001: 3
+Enter an amplitude for 0010: 2
+Enter an amplitude for 0011: 1
+Enter an amplitude for 0100: 6
+Enter an amplitude for 0101: 3
+Enter an amplitude for 0110: 2
+Enter an amplitude for 0111: 7
+Enter an amplitude for 1000: 10
+Enter an amplitude for 1001: 5
+Enter an amplitude for 1010: 3
+Enter an amplitude for 1011: 7
+Enter an amplitude for 1100: 1
+Enter an amplitude for 1101: 3
+Enter an amplitude for 1110: 9
+Enter an amplitude for 1111: 8
+
+>>> my_statevector
+{'0000': (4+0j), '0001': (3+0j), '0010': (2+0j), '0011': (1+0j), '0100': (6+0j),
+ '0101': (3+0j), '0110': (2+0j), '0111': (7+0j), '1000': (10+0j), '1001': (5+0j),
+ '1010': (3+0j), '1011': (7+0j), '1100': (1+0j), '1101': (3+0j), '1110': (9+0j),
+ '1111': (8+0j)}
+
+>>> x.entangled(my_statevector)
+|Psi> is Entangled
+{'0011': {
+    'basis_kets': ['0010', '0001'], 
+    'target_amplitude': (0.375+0j), 
+    'equality': False
+    }, 
+ '0101': {
+    'basis_kets': ['0100', '0001'], 
+    'target_amplitude': (1.125+0j), 
+    'equality': False
+    }, 
+ '0110': {
+    'basis_kets': ['0100', '0010'], 
+    'target_amplitude': (0.75+0j), 
+    'equality': False
+    }, 
+ '0111': {
+    'basis_kets': ['0100', '0010', '0001'], 
+    'target_amplitude': (0.5625+0j), 
+    'equality': False
+    }, 
+ '1001': {
+    'basis_kets': ['1000', '0001'], 
+    'target_amplitude': (1.875+0j), 
+    'equality': False
+    }, 
+ '1010': {
+    'basis_kets': ['1000', '0010'], 
+    'target_amplitude': (1.25+0j), 
+    'equality': False
+    }, 
+ '1011': {
+    'basis_kets': ['1000', '0010', '0001'], 
+    'target_amplitude': (0.9375+0j), 
+    'equality': False
+    }, 
+ '1100': {
+    'basis_kets': ['1000', '0100'], 
+    'target_amplitude': (3.75+0j), 
+    'equality': False
+    }, 
+ '1101': {
+    'basis_kets': ['1000', '0100', '0001'], 
+    'target_amplitude': (2.8125+0j), 
+    'equality': False
+    }, 
+ '1110': {
+    'basis_kets': ['1000', '0100', '0010'], 
+    'target_amplitude': (1.875+0j), 
+    'equality': False
+    }, 
+ '1111': {
+    'basis_kets': ['1000', '0100', '0010', '0001'], 
+    'target_amplitude': (1.40625+0j), 
+    'equality': False
+    }
+}
+
 
 TODO next:
-- implement methods from create_statevector.py
-- create separate method to normalize statevector with zero ket amplitude = 1
+- convert kets, basis_kets, and non_basis_kets to tuples so they are immutable
 """
 
 import numpy as np
@@ -59,51 +203,62 @@ from qiskit.quantum_info import random_statevector
 class Entangled:
     def __init__(self, number_qubits) -> None:
         self.number_qubits = number_qubits
-        # Initialize a nonzero Qiskit Statevector Dictionary of length 2^n
-        # Use np.ones() because Statevector(np.zeros()) returns an empty list    
-        self.statevector = Statevector(np.ones(2**number_qubits)).to_dict()
+
+        # initialize new statevector dictionary
+        self.statevector = self.init_statevector()
+
+        # create list of all kets of length 'number_qubits'
         self.kets = list(self.statevector.keys())
-        self.basis_kets = self.powers_of_two(self.number_qubits, self.kets)
-        self.non_basis_kets = self.non_basis_kets(self.basis_kets, self.kets)
-        self.decomp_dict = self.non_basis_kets_dict(self.non_basis_kets, self.basis_kets)
 
-    # https://stackoverflow.com/questions/12646326/calling-a-class-function-inside-of-init
-    # define methods as method_name(self, parameters)
-    # call methods inside __init__ as self.method_name(parameters)
+        # create list of basis kets of length 'number_qubits'
+        self.basis_kets = self.__powers_of_two(self.number_qubits, self.kets)
 
+        # create list of non-basis kets of length 'number_qubits'
+        self.non_basis_kets = self.__non_basis_kets_list(
+            self.basis_kets, self.kets
+            )
 
-    # Get list of powers of two in binary
+        # create dictionary of non-basis kets and their basis ket decompositions
+        self.decomp_dict = self.__non_basis_kets_dict(
+                self.non_basis_kets, self.basis_kets
+            )
+
+    # Initialize a nonzero Qiskit Statevector Dictionary
+    # use np.ones() because Statevector(np.zeros()) returns an empty list    
+    def init_statevector(self) -> dict:
+        return Statevector(np.ones(2**self.number_qubits)).to_dict()
+    
+    # Get list of powers of two as binary strings
     # We refer to these values as 'basis-kets'
     # inputs: 
     #   - n = length of bitstrings
-    #   - kets_list = statevector.keys()
+    #   - kets_list = a list of statevector.keys()
     # output: 
     #   - list of basis kets of length n powers of two from 2**0 to 2**(n-1)
-    def powers_of_two(self, n, kets_list):
+    def __powers_of_two(self, n, kets_list) -> list:
         return [kets_list[2**(n-1-i)] for i in range(n)]
 
-    # Get list of non powers of two in binary (default) or decimal
+    # Get list of non powers of two as binary strings
     # We refer to these values as 'non-basis kets'
     # inputs:
     #   - n = number of qubits, 
     #   - powers = list of basis kets
-    #   - kets = statevector.keys()
+    #   - kets = a list of statevector.keys()
     # output: 
     #   - list of non-powers of two less than 2**(n-1)
-    def non_basis_kets(self, powers, kets):
-        # use statevector keys() as input and remove powers of two
+    def __non_basis_kets_list(self, powers, kets) -> list:
         return [ket for ket in kets[1:] if ket not in powers]
 
-    # Determine basis kets corresponding to a non-basis ket
-    # Use this to reference basis kets in a Qiskit Statevector Dictionary
-    # Kets are all represented by binary strings
+    # Determine basis ket decomposition of a non-basis ket
     # inputs:    
     #   - ket = a non-basis ket of length 'n'
     #   - powers = list of all basis kets of length 'n'
     # output:
     #   - list of basis kets whose binary sum equals the non-basis ket
-    def get_basis_kets(self, ket, powers):
-        basis_kets = [powers[index] for index, bit in enumerate(ket) if bit == "1"]
+    def __get_basis_kets(self, ket, powers) -> list:
+        basis_kets = [
+            powers[index] for index, bit in enumerate(ket) if bit == "1"
+            ]
         return basis_kets
 
     # Create a dictionary of non-basis kets and their corresponding basis kets
@@ -115,11 +270,11 @@ class Entangled:
     #       - keys: the non-basis kets from the above list
     #       - values: dictionaries initialized with a list of their corresponding 
     #                 basis kets
-    def non_basis_kets_dict(self, list, powers):
+    def __non_basis_kets_dict(self, list, powers) -> dict:
         dict = {}
 
         for ket in list:
-            basis_kets = self.get_basis_kets(ket, powers)
+            basis_kets = self.__get_basis_kets(ket, powers)
             dict[ket] = { 'basis_kets': basis_kets }
 
         return dict
@@ -131,41 +286,54 @@ class Entangled:
             for ket in list }
         """
 
-    """ above functions all go inside __init__ """
-
     # Compute the product of ket amplitudes
     # inputs:
     #   - statevector dictionary
     #   - list of basis kets
     # output: 
     #   - product of the amplitudes of the given basis kets
-    def basis_amplitude_product(self, statevector, index_list):
+    def __basis_amplitude_product(self, statevector, index_list) -> complex:
         product = 1    
         for index in index_list:
             product = product*statevector[index]
         return product
 
+    # Generate basis kets corresponding to a specific non-basis ket
+    # Use with method check_single_ket when a list of basis kets is not provided
+    # input:
+    #   - ket = bitstring representing a non-basis ket
+    # output:
+    #   a list of bitstrings representing the corresponding basis kets
+    def __generate_basis_kets(self, ket) -> list:
+        length = len(ket)
+        basis_kets = [format(1 << (length - 1 - index) | 0, '0'+str(length)+'b')
+                for index, bit in enumerate(ket) if bit == "1"]
+        return basis_kets
+
     # Check equality of a non-basis ket amplitude with the product of its 
-    # corresponding basis ket amplitudes, and store the results in a dictionary.
-    # This can be used as a self-contained method to check the criteria on a 
-    # specific ket without having to run the algorithm for all kets.
+    # corresponding basis ket amplitudes and store the results in a dictionary.
+    # This can be used separately to check the criteria on a specific ket 
+    # without running the algorithm over all kets.  Basis kets can be generated
+    # 'on the fly' when a preset list is not provided.
     # inputs:
     #   - a statevector dictionary
     #   - a non-basis ket
     #   - (optional) list of corresponding basis kets
     # output: 
     #   - dictionary with computed target amplitude and boolean check value
-    def check_single_ket(self, statevector, ket, basis_kets=None):
+    def check_single_ket(self, statevector, ket, basis_kets=None) -> dict:
         dict = {}
 
         if basis_kets == None:
-        #   if basis kets not provided, generate them
-            basis_kets = self.generate_basis_kets(ket)
+        # if basis kets not provided, generate them
+            basis_kets = self.__generate_basis_kets(ket)
             dict['basis_kets'] = basis_kets
 
         # get product of basis ket amplitudes
         # append result to dictionary
-        dict['target_amplitude'] = self.basis_amplitude_product(statevector, basis_kets)
+        dict['target_amplitude'] = self.__basis_amplitude_product(
+            statevector, basis_kets
+            )
 
         # check if ket amplitude = product of basis ket amplitudes
         # append boolean result to dictionary
@@ -174,34 +342,22 @@ class Entangled:
         # Print Statements
         def print_statements():
             product_string = self.basis_product_string(basis_kets)
-            self.print_entanglement_equation(ket, product_string, dict['equality'])
+            self.print_entanglement_equation(
+                ket, product_string, dict['equality']
+                )
             if dict['equality'] == False:
-                self.print_basis_amplitudes(product_string, dict['target_amplitude'])
+                self.print_basis_amplitudes(
+                    product_string, dict['target_amplitude']
+                    )
         
         # print_statements()
         
         return dict
 
-
-    # Generate basis kets corresponding to a specific non-basis ket
-    # Method 1 (binary)
-    # Use with Qiskit Statevector Dictionary and function check_single_ket when a 
-    #   list of basis kets is not provided
-    # input:
-    #   - bitstring representing a non-basis ket
-    # output:
-    #   - a list of bitstrings representing the corresponding basis kets
-    def generate_basis_kets(self, ketstring):
-        length = len(ketstring)
-        basis_kets = [format(1 << (length - 1 - index) | 0, '0'+str(length)+'b')
-                for index, bit in enumerate(ketstring) if bit == "1"]    
-        return basis_kets
-
-
     # Print Product of basis kets Expression
     # input:
     #   - list of basis kets for a non-basis ket
-    def basis_product_string(self, list):
+    def basis_product_string(self, list) -> str:
         product = "Psi['"+list[0]+"']"
         for index in list[1:]:
             product = product + "*Psi['"+index+"']"
@@ -211,14 +367,14 @@ class Entangled:
     # input:
     #   - kets = text string reference to product of a list of basis ket amplitudes
     #   - amplitude = the numerical value of the product of the amplitudes
-    def print_basis_amplitudes(self, kets, amplitude):
+    def print_basis_amplitudes(self, kets, amplitude) -> None:
         print(kets + " = " + str(amplitude))
 
     # Print non-basis ket amplitude
     # inputs:
     #   - ket = text string reference to a non-basis ket amplitude
     #   - amplitude = numerical value of amplitude
-    def print_ket_amplitude(self, ket, amplitude):
+    def print_ket_amplitude(self, ket, amplitude) -> None:
         print("Psi['"+ket+"'] = " + str(amplitude))
 
 
@@ -227,7 +383,7 @@ class Entangled:
     #   - non-basis ket
     #   - product of basis ket string
     #   - boolean check value
-    def print_entanglement_equation(self, ket, basis_elements, bool):
+    def print_entanglement_equation(self, ket, basis_elements, bool) -> None:
         print("Psi['"+ket+"']" + " == " + basis_elements + " is " + str(bool))
 
 
@@ -243,8 +399,17 @@ class Entangled:
     #           - boolean equality check
     #   - print statement indicating whether or not the state is Entangled
     def entangled(self, statevector):
-        # create fresh copy of decomp_dict for given statevector
-        dict = self.decomp_dict
+        # initialize new decomposition dictionary for input statevector
+        dict = self.__non_basis_kets_dict(self.non_basis_kets, self.basis_kets)
+
+        # check if zero ket exists and perform change of basis if not
+        if list(statevector.values())[0] == 0:
+            # change_basis() (method to be written)
+            pass
+
+        # check zero ket amplitude and normalize if not equal to 1        
+        if list(statevector.values())[0] != 1:
+            statevector = self.normalize_statevector(statevector)
 
         # initalize set of booleans
         booleans = set()
@@ -271,4 +436,94 @@ class Entangled:
             print("|Psi> is not Entangled")
 
         return dict
+
+
+    # Get amplitude of single ket from user input
+    # Input is converted to complex number and type checked
+    # Non-numerical value will prompt user to input again
+    def __get_amplitude(self, key, recursive=False) -> complex:
+        """ get a complex number from user input
+        """
+        
+        # checks if user input is a number
+        if recursive:
+            message = f"Error: amplitude for {key} must be a number: "
+        else:
+            message = f"Enter an amplitude for {key}: "
+        
+        # get user input
+        amplitude = input(message)
+        
+        # empty user input defaults to '0' amplitude
+        if amplitude == "":
+            amplitude = 0
+
+        # convert user input to complex number type
+        try:
+            amplitude = complex(amplitude)
+        except ValueError:
+            return self.__get_amplitude(key, True)
+        
+        return amplitude
+
+	# Create statevector dictionary from user input	
+    def get_amplitudes(self):
+        """ Populate a new Qiskit Statevector Dictionary with amplitudes 
+        via user input
+        """
+        
+		# initialize new statevector of length 2**number_qubits
+        new_statevector = self.init_statevector()
+        
+        # update ket amplitudes
+        for key in new_statevector.keys():
+            new_statevector[key] = self.__get_amplitude(key)
+
+        return new_statevector
+
+
+    # Change of basis when zero ket amplitude is equal to 0
+    # involves choosing a ket and flipping all bits equal to '1'
+    # store index of each bit that is flipped
+    # flip bits at those same indices in all other kets (statevector.keys())
+    # make a copy of statevector first so that user statevector is not altered
+    # note that we don't necessarily need the new statevector keys to be in 
+    # ascending order since amplitudes are accessed by kets, not indices
+    def change_basis(self):
+        # method to be written
+        pass
+
+
+    # Normalize zero ket to have amplitude = 1
+    # This step should be added into entangled() method if zero ket amplitude 
+    # is not already equal to 1
+    # input:
+    #   - user qiskit statevector dictionary
+    # output:
+    #   - qiskit statevector dictionary with amplitudes scaled so that zero ket
+    #       has amplitude '1'
+    def normalize_statevector(self, statevector):
+        # get initial zero ket amplitude
+        zero_ket_amplitude = list(statevector.values())[0]
+
+        # divide all amplitudes by zero ket amplitude
+        normalized_statevector = { 
+            key: value/zero_ket_amplitude for key, value in statevector.items()
+            }
+       
+        return normalized_statevector
+
+
+    # Random Statevector Dictionary with normalized zero ket
+    def normalize_random_statevector(self):
+        # generate Qiskit random statevector of dim 2**number_qubits
+        random_state = random_statevector(2**self.number_qubits, None)
+
+        # Normalize zero ket to have amplitude = 1
+        normalized_random_state = random_state/random_state[0]
+
+        # Convert normalized Statevector to dictionary:
+        statevector = normalized_random_state.to_dict()
+
+        return statevector
 
