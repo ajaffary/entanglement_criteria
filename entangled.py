@@ -167,13 +167,13 @@ def non_basis_kets_dict(list, powers, base=None):
     return dict
 
 
-# Compute the product of basis ket amplitudes
+# Compute the product of ket amplitudes
 # This function works with either decimal or binary representations of kets
 # inputs:
 #   - statevector or statevector dictionary
-#   - list of basis kets as decimal indices or as binary strings
+#   - list of kets as decimal indices or as binary strings
 # output: 
-#   - product of the amplitudes of the given basis kets
+#   - product of the amplitudes of the given kets
 def basis_amplitude_product(statevector, index_list):
     product = 1    
     for index in index_list:
@@ -332,6 +332,7 @@ def entangled(statevector):
         booleans.add(dict[ket]['equality'])
 
     # conclusion
+    # rewrite as separate function
     if False in booleans:
         print("|Psi> is Entangled")
     else:
