@@ -191,8 +191,14 @@ Enter an amplitude for 1111: 8
     }
 }
 
+- basis change methods added and tested
+- see `basis_change.ipynb` for examples
+
 
 TODO next:
+- write method to prompt user to choose source_ket to map to zero for basis
+	transformation
+- write method to randomly choose and display non-zero source_ket on empty input
 - convert kets, basis_kets, and non_basis_kets to tuples so they are immutable
 """
 
@@ -403,12 +409,16 @@ class Entangled:
         dict = self.__non_basis_kets_dict(self.non_basis_kets, self.basis_kets)
 
         # check if zero ket exists and perform change of basis if not
-        if list(statevector.values())[0] == 0:
-            # change_basis() (method to be written)
+        if statevector['0'*self.number_qubits] == 0:
+            # method to be written:
+			# 	source_ket = prompt user for source_ket to map to zero ket
+            # 	'empty' user response randomly chooses a non-zero ket
+            #
+            # statevector = self.basis_change_method_one(statevector, source_ket)
             pass
 
         # check zero ket amplitude and normalize if not equal to 1        
-        if list(statevector.values())[0] != 1:
+        if statevector['0'*self.number_qubits] != 1:
             statevector = self.normalize_statevector(statevector)
 
         # initalize set of booleans
@@ -482,16 +492,82 @@ class Entangled:
         return new_statevector
 
 
-    # Change of basis when zero ket amplitude is equal to 0
-    # involves choosing a ket and flipping all bits equal to '1'
-    # store index of each bit that is flipped
-    # flip bits at those same indices in all other kets (statevector.keys())
-    # make a copy of statevector first so that user statevector is not altered
-    # note that we don't necessarily need the new statevector keys to be in 
-    # ascending order since amplitudes are accessed by kets, not indices
-    def change_basis(self):
-        # method to be written
-        pass
+	# Perform basis change on a single ket using XOR operator
+    # input:
+    #	- target_ket to be transformed
+    #	- source_ket that maps to zero ket
+    # output:
+    #	- transformed target ket
+    def basis_change_ket(self, target_ket, source_ket):
+        target_ket = format(
+			(int(target_ket,2))^(int(source_ket,2)), 
+            '0'+str(len(source_ket))+'b'
+			)
+        return target_ket 
+
+	# Basis Change Method 1: Transform Statevector keys directly
+    # This will change the order of kets in the Statevector, though
+    # this should not make a difference when using the entangled() method 
+    # since kets are only used reference amplitudes, and the final output 
+	# decomp_dictionary is ordered
+    # inputs:
+    # 	- statevector to be transformed
+	#	- source_ket that maps to zero ket
+    # output:
+    #	- transformed statevector
+    def basis_change_method_one(self, statevector, source_ket: str):
+        new_statevector = {
+			self.basis_change_ket(key, source_ket): value
+			for (key, value) in statevector.items()
+		}
+        return new_statevector
+
+	# Basis Change Method 2: Map Amplitudes to New Statevector
+    # This will preserve ket order for convenience
+    # inputs:
+    #	- statevector to be transformed
+    #	- source_ket that maps to zero ket
+    # output:
+    def basis_change_method_two(self, statevector, source_ket: str):
+        # create basis mapping dictionary
+        basis_change_dictionary = self.basis_change_dict(
+            statevector, 
+            source_ket
+            )
+
+        # map amplitudes into new statevector
+        new_statevector = self.map_amplitudes(
+            statevector, 
+            basis_change_dictionary
+            )
+        return new_statevector
+
+	# Create dictionary of basis change mapping
+	# note: can this be done with Python map() method?
+    # inputs:
+    #	- statevector to be transformed
+    #	- source_ket that maps to zero ket
+    # output:
+    #	- dictionary {new_ket: old_ket} of basis change mapping 
+    def basis_change_dict(self, statevector, source_ket: str) -> dict:
+        dict = {
+			key: self.basis_change_ket(key, source_ket)
+            for key in statevector.keys()
+		}
+        return dict
+
+	# Map amplitudes from original statevector to their locations in the 
+    # transformed statevector
+    # inputs:
+    #	- old_statevector = original Statevector dictionary
+    #	- dict: basis change mapping dictionary
+    # output:
+    #	- new_statevector = Transformed Statevector dictionary
+    def map_amplitudes(self, old_statevector, dict: dict) -> dict:
+        new_statevector = self.init_statevector()
+        for key in new_statevector.keys():
+            new_statevector[key] = old_statevector[dict[key]]
+        return new_statevector
 
 
     # Normalize zero ket to have amplitude = 1
@@ -504,7 +580,7 @@ class Entangled:
     #       has amplitude '1'
     def normalize_statevector(self, statevector):
         # get initial zero ket amplitude
-        zero_ket_amplitude = list(statevector.values())[0]
+        zero_ket_amplitude = statevector['0'*self.number_qubits]
 
         # divide all amplitudes by zero ket amplitude
         normalized_statevector = { 
@@ -526,4 +602,3 @@ class Entangled:
         statevector = normalized_random_state.to_dict()
 
         return statevector
-
