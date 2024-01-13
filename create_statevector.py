@@ -19,11 +19,15 @@ import numpy as np
 from qiskit.quantum_info import Statevector
 from qiskit.quantum_info import random_statevector
 
-# Get amplitude of single ket
-def get_amplitude(key, recursive=False):
+# Initialize a nonzero Qiskit Statevector Dictionary
+# use np.ones() because Statevector(np.zeros()) returns an empty list    
+def init_statevector(number_qubits: int) -> dict:
+    return Statevector(np.ones(2**number_qubits)).to_dict()
+
+# Get amplitude of single ket via user input
+def get_amplitude(key: str, recursive=False):
     """ get a complex number from user input
     """
-
     # checks if user input is a number
     if recursive:
         message = f"Error: amplitude for {key} must be a number: "
@@ -45,17 +49,13 @@ def get_amplitude(key, recursive=False):
     
     return amplitude
 
-def get_amplitudes(n):
+# Get amplitudes for each ket in Qiskit Statevector Dictionary
+def get_amplitudes(number_qubits: int):
     """ Populate a Qiskit Statevector dictionary values with amplitudes via
     user input
     """
-
-    # Initialize a nonzero Qiskit Statevector Dictionary of length 2^n
-    # Use np.ones() because Statevector(np.zeros()) returns an empty list
-    amplitudes = np.ones(2**n)
-    
-    # Convert to Qiskit Statevector dictionary
-    statevector = Statevector(amplitudes).to_dict()
+    # initalize new statevector dictionary
+    statevector = init_statevector(number_qubits)
 
     # Update ket amplitudes
     for key in statevector.keys():
@@ -78,3 +78,5 @@ def normalize_random_statevector(n):
     statevector = normalized_random_state.to_dict()
 
     return statevector
+
+# Basis Change

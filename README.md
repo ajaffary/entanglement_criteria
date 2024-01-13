@@ -8,4 +8,6 @@ Please see the comments in `entangled.py` and `create_statevector.py` for a summ
 `entanglement_class.py` is a new module with a class `Entangled`.  This incorporates and updates code from the above two modules.
 I have elected to only work with binary string representations of kets, so I've abandoned the decimal index versions of any functions, and removed references to an optional `base=10` parameter and the associated 'if/else' statements.  This means the algorithm only works with Qiskit Statevector Dictionaries.  I have not built in an exception to check for this before running the `entangled()` method.
 
+`basis_change.ipynb` is a Jupyter Notebook with test results for two basis change methods.
+
 Documentation inside `entanglement_class.py` describes the current structure, and provides examples of its methods.
