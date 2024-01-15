@@ -79,4 +79,12 @@ def normalize_random_statevector(n):
 
     return statevector
 
-# Basis Change
+# Test statevector of length 16 with zero ket amplitude = 0 to test 
+# basis change methods
+def test_statevector():
+    amplitudes = [0, 2, 3, 5, 0, 7, 8, 9, 0, 11, 0, 13, 17, 19, 0, 1]
+    x = init_statevector(4)
+
+    for index in range(len(amplitudes)):
+        x[list(x.keys())[index]] = amplitudes[index]
+    return x
