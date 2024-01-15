@@ -594,24 +594,25 @@ class Entangled:
 	# Get source_ket for basis change via user input
 	# input:
 	#	- valid_kets = tuple of non-zero kets
-	#	- recursive = boolean check for invalid input
+
 	# output:
 	#	- source_ket = ket to use for basis change transformation
-	def get_source_ket(self, valid_kets: tuple, recursive=False):
+	def get_source_ket(self, valid_kets: tuple):
 		""" get a ket string from user input
 		"""
 
+		print(inspect.cleandoc(
+			"""Please choose a ket from the following list to map 
+			to the zero ket, or press Enter to choose a random ket): """
+			)
+		)
 		while True:
-			# display list of valid kets
-			print(valid_kets)
-
 			try:
+				# display list of valid kets
+				print(valid_kets)
 				# get user input and convert to string
 				source_ket = str(
-					input(inspect.cleandoc(
-					"""Please choose a ket to map to the zero ket:
-					(or press Enter to choose a random ket)"""
-					))
+					input()
 				)    
 				# empty user input chooses random ket from valid_kets
 				if source_ket == "":
@@ -621,10 +622,9 @@ class Entangled:
 				elif source_ket not in valid_kets:
 					raise ValueError
 			except ValueError:
-				print(
-					inspect.cleandoc(
-					"""Error, please choose a ket from the following list:
-					(or Press Enter to choose a random ket)"""
+				print(inspect.cleandoc(
+					"""Error, please choose a ket from the following list, 
+					or press Enter to choose a random ket): """
 					)
 				)
 				continue
