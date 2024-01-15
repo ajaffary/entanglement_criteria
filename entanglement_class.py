@@ -195,11 +195,11 @@ Enter an amplitude for 1111: 8
 - see `basis_change.ipynb` for examples
 
 TODO next:
-- replace recursive function calls with while loops
+- test pretty print output formatting
 - review which methods should be private vs public
 - convert kets, basis_kets, and non_basis_kets to tuples so they are immutable
 - rewrite docstrings as restructured text
-- try to output final result as JSON (see python json encoding tutorial)
+- test JSON output (see python json encoding tutorial)
 """
 
 import numpy as np
