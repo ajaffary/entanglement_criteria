@@ -194,17 +194,18 @@ Enter an amplitude for 1111: 8
 - basis change methods added and tested
 - see `basis_change.ipynb` for examples
 
-
 TODO next:
-- write method to prompt user to choose source_ket to map to zero for basis
-	transformation
-- write method to randomly choose and display non-zero source_ket on empty input
+- test pretty print output formatting
+- review which methods should be private vs public
 - convert kets, basis_kets, and non_basis_kets to tuples so they are immutable
+- rewrite docstrings as restructured text
+- test JSON output (see python json encoding tutorial)
 """
 
 import numpy as np
 from qiskit.quantum_info import Statevector
 from qiskit.quantum_info import random_statevector
+import inspect
 
 class Entangled:
 	def __init__(self, number_qubits) -> None:
@@ -451,40 +452,48 @@ class Entangled:
 	# Get amplitude of single ket from user input
 	# Input is converted to complex number and type checked
 	# Non-numerical value will prompt user to input again
-	def __get_amplitude(self, key, recursive=False) -> complex:
+	def __get_amplitude(self, key) -> complex:
 		""" get a complex number from user input
 		"""
 		
 		# checks if user input is a number
-		if recursive:
-			message = f"Error: amplitude for {key} must be a number: "
-		else:
-			message = f"Enter an amplitude for {key}: "
-		
-		# get user input
-		amplitude = input(message)
-		
-		# empty user input defaults to '0' amplitude
-		if amplitude == "":
-			amplitude = 0
-
-		# convert user input to complex number type
-		try:
-			amplitude = complex(amplitude)
-		except ValueError:
-			return self.__get_amplitude(key, True)
+		while True:
+			amplitude = input(f"Enter an amplitude for {key}: ")
+			
+			# empty user input defaults to '0' amplitude
+			if amplitude == "":
+				amplitude = 0
+			try:
+				# convert user input to complex number type
+				amplitude = complex(amplitude)
+			except ValueError:
+				print(f"Error: amplitude for {key} must be a number.")
+				continue
+			else:
+				break
 		
 		return amplitude
 
-	# Create statevector dictionary from user input	
-	def get_amplitudes(self):
+
+	# Create statevector dictionary by prompting user to input amplitudes
+	# for each ket.  User may supply their own statevector as a parameter.
+	# If no parameter is provided, a new statevector is initalized.
+	# input:
+	#	- (optional) user statevector dictionary
+	# output:
+	#	- statevector dictionary with updated amplitudes
+	def get_amplitudes(self, statevector=None) -> dict:
 		""" Populate a new Qiskit Statevector Dictionary with amplitudes 
 		via user input
 		"""
 		
-		# initialize new statevector of length 2**number_qubits
-		new_statevector = self.init_statevector()
-		
+		if statevector:
+			# assign variable to user supplied statevector
+			new_statevector = statevector
+		else:
+			# initialize new statevector of length 2**number_qubits
+			new_statevector = self.init_statevector()
+			
 		# update ket amplitudes
 		for key in new_statevector.keys():
 			new_statevector[key] = self.__get_amplitude(key)
@@ -585,39 +594,45 @@ class Entangled:
 	# Get source_ket for basis change via user input
 	# input:
 	#	- valid_kets = tuple of non-zero kets
-	#	- recursive = boolean check for invalid input
+
 	# output:
 	#	- source_ket = ket to use for basis change transformation
-	def get_source_ket(self, valid_kets: tuple, recursive=False):
+	def get_source_ket(self, valid_kets: tuple):
 		""" get a ket string from user input
 		"""
 
-		# get user input
-		if recursive:
-			message = f"""Error: please choose a ket from the following list: \n 
-			(Press Enter to choose a random ket) \n"""
-		else:
-			message = f"""Please choose a ket to map to the zero ket: \n
-			(Press Enter to choose a random ket) \n"""
-		
-		# display list of valid kets
-		print(valid_kets)
+		print(inspect.cleandoc(
+			"""Please choose a ket from the following list to map 
+			to the zero ket, or press Enter to choose a random ket): """
+			)
+		)
+		while True:
+			try:
+				# display list of valid kets
+				print(valid_kets)
+				# get user input and convert to string
+				source_ket = str(
+					input()
+				)    
+				# empty user input chooses random ket from valid_kets
+				if source_ket == "":
+					source_ket = np.random.choice(valid_kets)
+					print("Random Choice: " + source_ket)
+				# check if user input is in valid_kets
+				elif source_ket not in valid_kets:
+					raise ValueError
+			except ValueError:
+				print(inspect.cleandoc(
+					"""Error, please choose a ket from the following list, 
+					or press Enter to choose a random ket): """
+					)
+				)
+				continue
+			else:
+				break
 
-		try:
-			# get user input and convert to string
-			source_ket = str(input(message))    
-			# empty user input chooses random ket from valid_kets
-			if source_ket == "":
-				source_ket = np.random.choice(valid_kets)
-				print("Random Choice: " + source_ket)
-			# check if user input is in valid_kets
-			elif source_ket not in valid_kets:
-				raise ValueError
-		except ValueError:
-			return self.get_source_ket(valid_kets, True)
-				
 		return source_ket
-
+	
 
 	# Normalize zero ket to have amplitude = 1
 	# input:
