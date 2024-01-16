@@ -191,21 +191,104 @@ Enter an amplitude for 1111: 8
 	}
 }
 
-- basis change methods added and tested
-- see `basis_change.ipynb` for examples
+>>> y = cs.test_statevector()
+# This is a 4-qubit statevector with zero ket amplitude = 0 to test out the
+# basis change methods
 
+>>> entang.pprint.pprint(y)
+{'0000': 0,
+ '0001': 2,
+ '0010': 3,
+ '0011': 5,
+ '0100': 0,
+ '0101': 7,
+ '0110': 8,
+ '0111': 9,
+ '1000': 0,
+ '1001': 11,
+ '1010': 0,
+ '1011': 13,
+ '1100': 17,
+ '1101': 19,
+ '1110': 0,
+ '1111': 1}
+
+ >>> result = x.entangled(y)
+Please choose a ket from the following list to map 
+to the zero ket, or press Enter to choose a random ket): 
+('0001', '0010', '0011', '0101', '0110', '0111', '1001', '1011', '1100', '1101',
+ '1111')
+Random Choice: 0110
+|Psi> is Entangled
+
+>>> entang.pprint.pprint(result)
+{'0011': {'basis_kets': ['0010', '0001'],
+          'equality': False,
+          'target_amplitude': 0.0},
+ '0101': {'basis_kets': ['0100', '0001'],
+          'equality': False,
+          'target_amplitude': 0.421875},
+ '0110': {'basis_kets': ['0100', '0010'],
+          'equality': True,
+          'target_amplitude': 0.0},
+ '0111': {'basis_kets': ['0100', '0010', '0001'],
+          'equality': False,
+          'target_amplitude': 0.0},
+ '1001': {'basis_kets': ['1000', '0001'],
+          'equality': False,
+          'target_amplitude': 0.0},
+ '1010': {'basis_kets': ['1000', '0010'],
+          'equality': False,
+          'target_amplitude': 0.0},
+ '1011': {'basis_kets': ['1000', '0010', '0001'],
+          'equality': False,
+          'target_amplitude': 0.0},
+ '1100': {'basis_kets': ['1000', '0100'],
+          'equality': True,
+          'target_amplitude': 0.0},
+ '1101': {'basis_kets': ['1000', '0100', '0001'],
+          'equality': False,
+          'target_amplitude': 0.0},
+ '1110': {'basis_kets': ['1000', '0100', '0010'],
+          'equality': True,
+          'target_amplitude': 0.0},
+ '1111': {'basis_kets': ['1000', '0100', '0010', '0001'],
+          'equality': False,
+          'target_amplitude': 0.0}}
+ 
+>>> basis_change_dictionary = x.basis_change_dict(y, '0110')
+>>> entang.pprint.pprint(basis_change_dictionary)
+{'0000': '0110',
+ '0001': '0111',
+ '0010': '0100',
+ '0011': '0101',
+ '0100': '0010',
+ '0101': '0011',
+ '0110': '0000',
+ '0111': '0001',
+ '1000': '1110',
+ '1001': '1111',
+ '1010': '1100',
+ '1011': '1101',
+ '1100': '1010',
+ '1101': '1011',
+ '1110': '1000',
+ '1111': '1001'}
+		  
 TODO next:
-- test pretty print output formatting
 - review which methods should be private vs public
 - convert kets, basis_kets, and non_basis_kets to tuples so they are immutable
 - rewrite docstrings as restructured text
 - test JSON output (see python json encoding tutorial)
+- create separate class for entangled() method output (e.g. including all the
+above data)
 """
 
 import numpy as np
 from qiskit.quantum_info import Statevector
 from qiskit.quantum_info import random_statevector
 import inspect
+import pprint
 
 class Entangled:
 	def __init__(self, number_qubits) -> None:
